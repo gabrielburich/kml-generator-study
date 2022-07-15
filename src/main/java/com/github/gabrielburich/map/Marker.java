@@ -1,17 +1,23 @@
 package com.github.gabrielburich.map;
 
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
-public class Marker {
+@Getter
+@Setter
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+public class Marker extends Coordinate {
 
     private String name;
     private String description;
     private LocalDateTime date;
-    private Double latitude;
-    private Double longitude;
-    private Double altitude = 0D;
 
+    public Marker(Double latitude, Double longitude, Double altitude, String name, String description, LocalDateTime date) {
+        super(latitude, longitude, altitude);
+        this.name = name;
+        this.description = description;
+        this.date = date;
+    }
 }
