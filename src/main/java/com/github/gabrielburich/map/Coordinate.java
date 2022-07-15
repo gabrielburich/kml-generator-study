@@ -12,4 +12,5 @@ public class Coordinate {
     private Double latitude;
     private Double longitude;
     private Double altitude = 0D;
+
 }

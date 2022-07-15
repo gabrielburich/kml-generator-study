@@ -1,5 +1,10 @@
 package com.github.gabrielburich.kml.polygon;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum AltitudeMode {
 
     CLAMP_TO_GROUND("clampToGround"),
@@ -7,13 +12,5 @@ public enum AltitudeMode {
     ABSOLUTE("absolute");
 
     private final String value;
-
-    AltitudeMode(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
 
 }
