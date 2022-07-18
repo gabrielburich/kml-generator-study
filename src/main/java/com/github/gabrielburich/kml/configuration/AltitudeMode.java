@@ -1,4 +1,4 @@
-package com.github.gabrielburich.kml.polygon;
+package com.github.gabrielburich.kml.configuration;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

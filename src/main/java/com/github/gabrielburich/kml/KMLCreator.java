@@ -1,7 +1,8 @@
 package com.github.gabrielburich.kml;
 
-import com.github.gabrielburich.kml.polygon.AltitudeMode;
-import com.github.gabrielburich.kml.polygon.Extrude;
+import com.github.gabrielburich.kml.configuration.AltitudeMode;
+import com.github.gabrielburich.kml.configuration.Extrude;
+import com.github.gabrielburich.kml.configuration.Tessellate;
 import com.github.gabrielburich.map.Coordinate;
 import com.github.gabrielburich.map.Marker;
 import org.w3c.dom.Document;
@@ -78,7 +79,15 @@ public class KMLCreator {
      * @param coordinates list of coordinates, polygon points
      */
     public void addPolygon(List<Coordinate> coordinates) {
-        addPolygon(coordinates, Extrude.EXTUDE_TRUE, AltitudeMode.RELATIVE_TO_GROUND);
+        addPolygon(coordinates, null);
+    }
+
+    /**
+     * Add a polygon to the kml file with the default configs
+     * @param coordinates list of coordinates, polygon points
+     */
+    public void addPolygon(List<Coordinate> coordinates, String name) {
+        addPolygon(coordinates, name, Extrude.EXTUDE_TRUE, AltitudeMode.RELATIVE_TO_GROUND);
     }
 
     /**
@@ -87,14 +96,16 @@ public class KMLCreator {
      * @param extrude extrude configuration
      * @param altitudeMode altitude mode configuration
      */
-    public void addPolygon(List<Coordinate> coordinates, Extrude extrude, AltitudeMode altitudeMode) {
+    public void addPolygon(List<Coordinate> coordinates, String name, Extrude extrude, AltitudeMode altitudeMode) {
         Element placeMark = doc.createElement(KMLConstants.PLACEMARK);
         root.appendChild(placeMark);
 
         // add the name to the place mark
-        Element name = doc.createElement("name");
-        name.appendChild(doc.createTextNode("Polygon name"));
-        placeMark.appendChild(name);
+        if (name != null) {
+            Element nameElement = doc.createElement("name");
+            nameElement.appendChild(doc.createTextNode(name));
+            placeMark.appendChild(nameElement);
+        }
 
         // Add polygon to a place mark
         Element polygon = doc.createElement("Polygon");
@@ -122,6 +133,67 @@ public class KMLCreator {
 
         Element coordinatesElement = doc.createElement("coordinates");
         linearRing.appendChild(coordinatesElement);
+
+        for (Coordinate coordinate : coordinates) {
+            var textNode = doc.createTextNode(coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n");
+            coordinatesElement.appendChild(textNode);
+        }
+    }
+
+    public void addLineString(List<Coordinate> coordinates) {
+        addLineString(coordinates, null);
+    }
+
+    public void addLineString(List<Coordinate> coordinates, String name) {
+        addLineString(coordinates, name, Tessellate.TESSELLATE_TRUE, null, null);
+    }
+
+    /**
+     * Add's a polyline
+     * @param coordinates
+     * @param name
+     * @param tessellate
+     * @param extrude
+     * @param altitudeMode
+     */
+    public void addLineString(List<Coordinate> coordinates, String name, Tessellate tessellate, Extrude extrude, AltitudeMode altitudeMode) {
+        Element placeMark = doc.createElement(KMLConstants.PLACEMARK);
+        root.appendChild(placeMark);
+
+        // Add polygon to a place mark
+        Element lineString = doc.createElement("LineString");
+        placeMark.appendChild(lineString);
+
+        // add the name to the place mark
+        if (name != null) {
+            Element nameElement = doc.createElement("name");
+            nameElement.appendChild(doc.createTextNode(name));
+            placeMark.appendChild(nameElement);
+        }
+
+        // creates to tessellate property
+        if (tessellate != null) {
+            Element tessellateElement = doc.createElement("tessellate");
+            tessellateElement.appendChild(doc.createTextNode(tessellate.getValue()));
+            lineString.appendChild(tessellateElement);
+        }
+
+        // creates to extrude property
+        if (extrude != null) {
+            Element extrudeElement = doc.createElement("extrude");
+            extrudeElement.appendChild(doc.createTextNode(extrude.getValue()));
+            lineString.appendChild(extrudeElement);
+        }
+
+        // creates the altitudeMode
+        if (altitudeMode != null) {
+            Element altitudeModeElement = doc.createElement("altitudeMode");
+            altitudeModeElement.appendChild(doc.createTextNode(altitudeMode.getValue()));
+            lineString.appendChild(altitudeModeElement);
+        }
+
+        Element coordinatesElement = doc.createElement("coordinates");
+        lineString.appendChild(coordinatesElement);
 
         for (Coordinate coordinate : coordinates) {
             var textNode = doc.createTextNode(coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n");

@@ -57,9 +57,23 @@ public class KMLCreatorTest {
         coordinates.add(new Coordinate(37.42257124044786,-122.0848938459612,17D));
 
 
-        kmlCreator.addPolygon(coordinates);
+        kmlCreator.addPolygon(coordinates, "Polygon Google Build");
 
         File outputFile = new File("test_coordinate__b.kml");
+        kmlCreator.writeFile(outputFile);
+    }
+
+    @Test
+    public void writeFileWithLineString() throws ParserConfigurationException {
+        KMLCreator kmlCreator = new KMLCreator();
+        List<Coordinate> coordinates = new ArrayList<>();
+
+        coordinates.add(new Coordinate(36.10677870477137,-112.0814237830345,0D));
+        coordinates.add(new Coordinate(36.0905099328766,-112.0870267752693,0D));
+
+        kmlCreator.addLineString(coordinates, "StringLine Google Build");
+
+        File outputFile = new File("test_coordinate__c.kml");
         kmlCreator.writeFile(outputFile);
     }
 }
