@@ -145,10 +145,7 @@ public class KMLCreator {
                     continue;
                 }
 
-                Element styleValue = document.createElement(elementStyleProperty.getKey());
-                stylePropertyElement.appendChild(styleValue);
-
-                styleValue.appendChild(document.createTextNode(elementStyleProperty.getValue()));
+                createElementWithValue(elementStyleProperty.getKey(), elementStyleProperty.getValue(), stylePropertyElement);
             }
         }
     }
