@@ -1,13 +1,17 @@
 package com.github.gabrielburich.kml;
 
 import com.github.gabrielburich.map.Coordinate;
+import com.github.gabrielburich.map.LineString;
 import com.github.gabrielburich.map.Marker;
+import com.github.gabrielburich.map.Polygon;
 import org.junit.Test;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // TODO do really do tests
 public class KMLCreatorTest {
@@ -19,18 +23,23 @@ public class KMLCreatorTest {
         Marker marker = new Marker();
         marker.setName("Hercilio Luz Bridge");
         marker.setDescription("Bridge in Florianopolis");
-        marker.setLatitude(-27.184972);
-        marker.setLongitude(-48.502638);
+        marker.setLatitude(-27.6006082);
+        marker.setLongitude(-48.5725834);
 
         kmlCreator.addPlaceMark(marker);
 
-        File outputFile = new File("test.kml");
+        File outputFile = new File("test_marker.kml");
         kmlCreator.writeFile(outputFile);
     }
 
     @Test
     public void writeFileWithCoordinatesTest() throws ParserConfigurationException {
         KMLCreator kmlCreator = new KMLCreator();
+
+        Map<String, Map<String, String>> styles = new HashMap<>();
+        styles.put("PolyStyle", Map.of("color", "7dff0000"));
+        kmlCreator.addStyle("polyLineStyle", styles);
+
         List<Coordinate> coordinates = new ArrayList<>();
 
         coordinates.add(new Coordinate(37.42257124044786,-122.0848938459612,17D));
@@ -57,9 +66,13 @@ public class KMLCreatorTest {
         coordinates.add(new Coordinate(37.42257124044786,-122.0848938459612,17D));
 
 
-        kmlCreator.addPolygon(coordinates, "Polygon Google Build");
+        Polygon polygon = new Polygon();
+        polygon.setName("Polygon Google Build");
+        polygon.setCoordinates(coordinates);
+        polygon.setStyleUrl("#polyLineStyle");
+        kmlCreator.addPolygon(polygon);
 
-        File outputFile = new File("test_coordinate__b.kml");
+        File outputFile = new File("test_polygon.kml");
         kmlCreator.writeFile(outputFile);
     }
 
@@ -71,9 +84,12 @@ public class KMLCreatorTest {
         coordinates.add(new Coordinate(36.10677870477137,-112.0814237830345,0D));
         coordinates.add(new Coordinate(36.0905099328766,-112.0870267752693,0D));
 
-        kmlCreator.addLineString(coordinates, "StringLine Google Build");
+        LineString lineString = new LineString();
+        lineString.setCoordinates(coordinates);
+        lineString.setName("StringLine On mountains");
+        kmlCreator.addLineString(lineString);
 
-        File outputFile = new File("test_coordinate__c.kml");
+        File outputFile = new File("test_path.kml");
         kmlCreator.writeFile(outputFile);
     }
 }

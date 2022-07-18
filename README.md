@@ -8,5 +8,7 @@ TODO:
 - [x] Info window (Description property)
 - [X] Polygon
 - [X] Polyline
-- [ ] Default styles
+- [X] Add Styles support
+- [x] Add style to an element support
 - [ ] Improve this documentation, links, why not using libraries, what is it, how to open
+- [ ] Improve tests

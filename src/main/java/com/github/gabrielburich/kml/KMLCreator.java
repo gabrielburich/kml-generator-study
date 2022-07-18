@@ -1,10 +1,9 @@
 package com.github.gabrielburich.kml;
 
-import com.github.gabrielburich.kml.configuration.AltitudeMode;
-import com.github.gabrielburich.kml.configuration.Extrude;
-import com.github.gabrielburich.kml.configuration.Tessellate;
 import com.github.gabrielburich.map.Coordinate;
+import com.github.gabrielburich.map.LineString;
 import com.github.gabrielburich.map.Marker;
+import com.github.gabrielburich.map.Polygon;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -16,11 +15,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.util.List;
+import java.util.Map;
 
 public class KMLCreator {
 
-    private final Document doc;
+    private final Document document;
     private final Element root;
 
     /**
@@ -30,10 +29,10 @@ public class KMLCreator {
     public KMLCreator() throws ParserConfigurationException {
         var factory = DocumentBuilderFactory.newInstance();
         var builder = factory.newDocumentBuilder();
-        doc = builder.newDocument();
-        Element kml = doc.createElementNS(KMLConstants.NAMESPACE_URL, KMLConstants.KML);
-        doc.appendChild(kml);
-        root = doc.createElement(KMLConstants.DOCUMENT);
+        document = builder.newDocument();
+        Element kml = document.createElementNS(KMLConstants.NAMESPACE_URL, KMLConstants.KML);
+        document.appendChild(kml);
+        root = document.createElement(KMLConstants.DOCUMENT);
         kml.appendChild(root);
     }
 
@@ -42,164 +41,130 @@ public class KMLCreator {
      * @param marker marker locations
      */
     public void addPlaceMark(Marker marker) {
-        // creates the place mark
-        Element placeMark = doc.createElement(KMLConstants.PLACEMARK);
-        root.appendChild(placeMark);
+        Element placeMark = createElement(KMLConstants.PLACE_MARK, root);
+        createElementWithValue(KMLConstants.NAME, marker.getName(), placeMark);
+        createElementWithValue(KMLConstants.DESCRIPTION, marker.getDescription(), placeMark);
 
-        // add the name to the place mark
-        Element name = doc.createElement("name");
-        name.appendChild(doc.createTextNode(marker.getName()));
-        placeMark.appendChild(name);
-
-        // add the description to the place mark
-        Element desc = doc.createElement("description");
-        // Here can be the data to the info window
-        desc.appendChild(doc.createTextNode(marker.getDescription()));
-        placeMark.appendChild(desc);
-
-        // creates a point and add to placeMark
-        Element point = doc.createElement("Point");
-        placeMark.appendChild(point);
-
-        // if there is altitude, inserts
+        Element point = createElement(KMLConstants.POINT, placeMark);
         if (marker.getAltitude() > 0) {
-            Element altitudeMode = doc.createElement("altitudeMode");
-            altitudeMode.appendChild(doc.createTextNode("absolute"));
-            point.appendChild(altitudeMode);
+            createElementWithValue(KMLConstants.ALTITUDE_MODE, "absolute", point);
         }
 
-        // creates a coordinates
-        Element coords = doc.createElement("coordinates");
-        coords.appendChild(doc.createTextNode(marker.getLongitude() + ", " + marker.getLatitude() + ", " + marker.getAltitude()));
-        point.appendChild(coords);
+        String coordinates = marker.getLongitude() + "," + marker.getLatitude() + "," + marker.getAltitude();
+        createElementWithValue(KMLConstants.COORDINATES, coordinates, point);
+
+        if (marker.getStyleUrl() != null) {
+            createElementWithValue(KMLConstants.STYLE_URL, marker.getStyleUrl(), placeMark);
+        }
     }
 
     /**
-     * Add a polygon to the kml file with the default configs
-     * @param coordinates list of coordinates, polygon points
+     * Adds a polygon to the KML file
+     * @param polygon polygon definition
      */
-    public void addPolygon(List<Coordinate> coordinates) {
-        addPolygon(coordinates, null);
-    }
+    public void addPolygon(Polygon polygon) {
+        Element placeMark = createElement(KMLConstants.PLACE_MARK, root);
 
-    /**
-     * Add a polygon to the kml file with the default configs
-     * @param coordinates list of coordinates, polygon points
-     */
-    public void addPolygon(List<Coordinate> coordinates, String name) {
-        addPolygon(coordinates, name, Extrude.EXTUDE_TRUE, AltitudeMode.RELATIVE_TO_GROUND);
-    }
-
-    /**
-     * Add a polygon to the kml file with configuration
-     * @param coordinates list of coordinates, polygon points
-     * @param extrude extrude configuration
-     * @param altitudeMode altitude mode configuration
-     */
-    public void addPolygon(List<Coordinate> coordinates, String name, Extrude extrude, AltitudeMode altitudeMode) {
-        Element placeMark = doc.createElement(KMLConstants.PLACEMARK);
-        root.appendChild(placeMark);
-
-        // add the name to the place mark
-        if (name != null) {
-            Element nameElement = doc.createElement("name");
-            nameElement.appendChild(doc.createTextNode(name));
-            placeMark.appendChild(nameElement);
+        if (polygon.getName() != null) {
+            createElementWithValue(KMLConstants.NAME, polygon.getName(), placeMark);
         }
 
-        // Add polygon to a place mark
-        Element polygon = doc.createElement("Polygon");
-        placeMark.appendChild(polygon);
+        Element polygonElement = createElement(KMLConstants.POLYGON, placeMark);
 
-        // creates to extrude property
-        if (extrude != null) {
-            Element extrudeElement = doc.createElement("extrude");
-            extrudeElement.appendChild(doc.createTextNode(extrude.getValue()));
-            polygon.appendChild(extrudeElement);
+
+        if (polygon.getExtrude() != null) {
+            createElementWithValue(KMLConstants.EXTRUDE, polygon.getExtrude().getValue(), polygonElement);
         }
 
-        // creates the altitudeMode
-        if (altitudeMode != null) {
-            Element altitudeModeElement = doc.createElement("altitudeMode");
-            altitudeModeElement.appendChild(doc.createTextNode(altitudeMode.getValue()));
-            polygon.appendChild(altitudeModeElement);
+        if (polygon.getAltitudeMode() != null) {
+            createElementWithValue(KMLConstants.ALTITUDE_MODE, polygon.getAltitudeMode().getValue(), polygonElement);
         }
 
-        Element outerBoundaryIs = doc.createElement("outerBoundaryIs");
-        polygon.appendChild(outerBoundaryIs);
+        Element outerBoundaryIs = createElement(KMLConstants.OUTER_BOUNDARY_IS, polygonElement);
+        Element linearRing = createElement(KMLConstants.LINEAR_RING, outerBoundaryIs);
+        Element coordinatesElement = createElement(KMLConstants.COORDINATES, linearRing);
 
-        Element linearRing = doc.createElement("LinearRing");
-        outerBoundaryIs.appendChild(linearRing);
-
-        Element coordinatesElement = doc.createElement("coordinates");
-        linearRing.appendChild(coordinatesElement);
-
-        for (Coordinate coordinate : coordinates) {
-            var textNode = doc.createTextNode(coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n");
-            coordinatesElement.appendChild(textNode);
+        for (Coordinate coordinate : polygon.getCoordinates()) {
+            String coordinates = coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n";
+            coordinatesElement.appendChild(document.createTextNode(coordinates));
         }
-    }
 
-    public void addLineString(List<Coordinate> coordinates) {
-        addLineString(coordinates, null);
-    }
-
-    public void addLineString(List<Coordinate> coordinates, String name) {
-        addLineString(coordinates, name, Tessellate.TESSELLATE_TRUE, null, null);
+        if (polygon.getStyleUrl() != null) {
+            createElementWithValue(KMLConstants.STYLE_URL, polygon.getStyleUrl(), placeMark);
+        }
     }
 
     /**
      * Add's a polyline
-     * @param coordinates
-     * @param name
-     * @param tessellate
-     * @param extrude
-     * @param altitudeMode
+     * @param lineString Polyline definition
      */
-    public void addLineString(List<Coordinate> coordinates, String name, Tessellate tessellate, Extrude extrude, AltitudeMode altitudeMode) {
-        Element placeMark = doc.createElement(KMLConstants.PLACEMARK);
-        root.appendChild(placeMark);
+    public void addLineString(LineString lineString) {
+        Element placeMark = createElement(KMLConstants.PLACE_MARK, root);
+        Element lineStringElement = createElement(KMLConstants.LINE_STRING, placeMark);
 
-        // Add polygon to a place mark
-        Element lineString = doc.createElement("LineString");
-        placeMark.appendChild(lineString);
-
-        // add the name to the place mark
-        if (name != null) {
-            Element nameElement = doc.createElement("name");
-            nameElement.appendChild(doc.createTextNode(name));
-            placeMark.appendChild(nameElement);
+        if (lineString.getName() != null) {
+            createElementWithValue(KMLConstants.NAME, lineString.getName(), placeMark);
         }
 
-        // creates to tessellate property
-        if (tessellate != null) {
-            Element tessellateElement = doc.createElement("tessellate");
-            tessellateElement.appendChild(doc.createTextNode(tessellate.getValue()));
-            lineString.appendChild(tessellateElement);
+        if (lineString.getTessellate() != null) {
+            createElementWithValue(KMLConstants.TESSELLATE, lineString.getTessellate().getValue(), lineStringElement);
         }
 
-        // creates to extrude property
-        if (extrude != null) {
-            Element extrudeElement = doc.createElement("extrude");
-            extrudeElement.appendChild(doc.createTextNode(extrude.getValue()));
-            lineString.appendChild(extrudeElement);
+        if (lineString.getExtrude() != null) {
+            createElementWithValue(KMLConstants.EXTRUDE, lineString.getExtrude().getValue(), lineStringElement);
         }
 
-        // creates the altitudeMode
-        if (altitudeMode != null) {
-            Element altitudeModeElement = doc.createElement("altitudeMode");
-            altitudeModeElement.appendChild(doc.createTextNode(altitudeMode.getValue()));
-            lineString.appendChild(altitudeModeElement);
+        if (lineString.getAltitudeMode() != null) {
+            createElementWithValue(KMLConstants.ALTITUDE_MODE, lineString.getAltitudeMode().getValue(), lineStringElement);
         }
 
-        Element coordinatesElement = doc.createElement("coordinates");
-        lineString.appendChild(coordinatesElement);
+        Element coordinatesElement = createElement(KMLConstants.COORDINATES, lineStringElement);
 
-        for (Coordinate coordinate : coordinates) {
-            var textNode = doc.createTextNode(coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n");
+        for (Coordinate coordinate : lineString.getCoordinates()) {
+            String coordinates = coordinate.getLongitude() + "," + coordinate.getLatitude() + "," + coordinate.getAltitude() + "\n";
+            var textNode = document.createTextNode(coordinates);
             coordinatesElement.appendChild(textNode);
         }
+
+        if (lineString.getStyleUrl() != null) {
+            createElementWithValue(KMLConstants.STYLE_URL, lineString.getStyleUrl(), placeMark);
+        }
     }
+
+    public void addStyle(String id, Map<String, Map<String, String>> styles) {
+        Element rootStyleElement = createElement(KMLConstants.STYLE, root);
+        rootStyleElement.setAttribute("id", id);
+
+        for(Map.Entry<String, Map<String, String>> stylePerElement: styles.entrySet()) {
+            Element stylePropertyElement = createElement(stylePerElement.getKey(), rootStyleElement);
+
+            for (Map.Entry<String, String> elementStyleProperty : stylePerElement.getValue().entrySet()) {
+                if (elementStyleProperty.getKey().equals(KMLConstants.HREF)) {
+                    Element iconElement = createElement(KMLConstants.ICON, stylePropertyElement);
+                    createElementWithValue(KMLConstants.HREF, elementStyleProperty.getValue(), iconElement);
+                    continue;
+                }
+
+                Element styleValue = document.createElement(elementStyleProperty.getKey());
+                stylePropertyElement.appendChild(styleValue);
+
+                styleValue.appendChild(document.createTextNode(elementStyleProperty.getValue()));
+            }
+        }
+    }
+
+    private Element createElement(String elementName, Element parent) {
+        Element element = document.createElement(elementName);
+        parent.appendChild(element);
+        return element;
+    }
+
+    private Element createElementWithValue(String elementName, String elementValue, Element parent) {
+        Element element = createElement(elementName, parent);
+        element.appendChild(document.createTextNode(elementValue));
+        return element;
+    }
+
 
     /**
      * Write the kml in one file
@@ -212,7 +177,7 @@ public class KMLCreator {
             Transformer transformer = factory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            DOMSource src = new DOMSource(doc);
+            DOMSource src = new DOMSource(document);
             StreamResult out = new StreamResult(file);
             transformer.transform(src, out);
         } catch(Exception e) {
